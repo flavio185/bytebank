@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:js';
 
 import 'package:flutter/material.dart';
 
@@ -7,7 +8,11 @@ void main() => runApp(ByteBankApp());
 class ByteBankApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return FormularioTransferencia();
+    return MaterialApp(
+      home: Scaffold(
+        body: ListaTransferencias(),
+      ),
+    );
   }
 }
 
@@ -17,38 +22,38 @@ class FormularioTransferencia extends StatelessWidget {
   final TextEditingController _controladorCampoValor = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Criando Transferencia'),
-        ),
-        body: Column(
-          children: [
-            Editor(
-                controlador: _controladorCampoNumeroConta,
-                dica: '0000',
-                rotulo: 'Número da conta'),
-            Editor(
-                controlador: _controladorCampoValor,
-                dica: '0.00',
-                rotulo: "Valoe",
-                icone: Icons.monetization_on),
-            ElevatedButton(
-              child: Text("Confirmar"),
-              onPressed: () => _criarTransferencia(),
-            )
-          ],
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Criando Transferencia'),
+      ),
+      body: Column(
+        children: [
+          Editor(
+              controlador: _controladorCampoNumeroConta,
+              dica: '0000',
+              rotulo: 'Número da conta'),
+          Editor(
+              controlador: _controladorCampoValor,
+              dica: '0.00',
+              rotulo: "Valoe",
+              icone: Icons.monetization_on),
+          ElevatedButton(
+            child: Text("Confirmar"),
+            onPressed: () => _criarTransferencia(context),
+          )
+        ],
       ),
     );
   }
 
-  void _criarTransferencia() {
+  void _criarTransferencia(BuildContext context) {
     final int numeroConta = int.tryParse(_controladorCampoNumeroConta.text);
     final double valor = double.tryParse(_controladorCampoValor.text);
     if (numeroConta != null && valor != null) {
       final transferenciaCriada = Transferencia(valor, numeroConta);
-      debugPrint('$transferenciaCriada');
+      debugPrint('Criando transferência');
+      debugPrint('bla $transferenciaCriada');
+      Navigator.pop(context, transferenciaCriada);
     }
   }
 }
@@ -78,22 +83,43 @@ class Editor extends StatelessWidget {
   }
 }
 
-class ListaTransferencias extends StatelessWidget {
+class ListaTransferencias extends StatefulWidget {
+  final List<Transferencia> _transferencias = [];
+
+  @override
+  State<StatefulWidget> createState() {
+    // TODO: implement createState
+    return ListaTransferenciasState();
+  }
+}
+
+class ListaTransferenciasState extends State<ListaTransferencias> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Transferências'),
       ),
-      body: Column(
-        children: <Widget>[
-          ItemTransferencia(Transferencia(100.0, 1000)),
-          ItemTransferencia(Transferencia(200.0, 2000)),
-          ItemTransferencia(Transferencia(300.0, 3000)),
-        ],
+      body: ListView.builder(
+        itemCount: widget._transferencias.length,
+        itemBuilder: (context, indice) {
+          final transferencia = widget._transferencias[indice];
+          return ItemTransferencia(transferencia);
+        },
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
+        onPressed: () {
+          final Future<Transferencia> future =
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return FormularioTransferencia();
+          }));
+          future.then((transferenciaRecebida) {
+            debugPrint('chegou no then do future');
+            debugPrint('$transferenciaRecebida');
+            setState(() => widget._transferencias.add(transferenciaRecebida));
+          });
+        },
       ),
     );
   }
